@@ -15,22 +15,22 @@ class User(object):
     def update_weights(self, model):
         model.train()
         optimizer = torch.optim.SGD(model.parameters(), lr=self.learning_rate, momentum=0.9)
+        local_loss = 0
+        for _ in range(self.local_epochs):
 
-        local_loss = 0.0
+            for sample in self.dataloader:
+                seq = sample["seq"].float().to(self.device)
+                target = sample["target"].float().to(self.device)
+                fixed = sample["fixed"].float().to(self.device)
 
-        for sample in self.dataloader:
-            seq = sample["seq"].float().to(self.device)
-            target = sample["target"].float().to(self.device)
-            fixed = sample["fixed"].float().to(self.device)
+                model.zero_grad()
 
-            model.zero_grad()
+                target_pred = model(seq, fixed)
 
-            target_pred = model(seq, fixed)
+                loss = self.criterion(torch.squeeze(target_pred), target)
+                loss.backward()
+                optimizer.step()
 
-            loss = self.criterion(torch.squeeze(target_pred), target)
-            loss.backward()
-            optimizer.step()
-
-            local_loss += loss.item()
+                local_loss += loss.item()
 
         return model.state_dict(), local_loss, len(self.dataloader.dataset)
