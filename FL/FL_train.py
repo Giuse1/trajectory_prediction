@@ -35,7 +35,7 @@ def train_model(global_model, criterion, num_rounds, local_epochs, num_users, ba
                 for idx in random_list:
                     local_model = User(dataloader=trainloader_list[idx], id=idx, criterion=criterion,
                                               local_epochs=local_epochs, learning_rate=learning_rate)
-                    w, local_loss, local_correct, local_total = local_model.update_weights(
+                    w, local_loss, local_total = local_model.update_weights(
                         model=copy.deepcopy(global_model).float())
                     local_weights.append(copy.deepcopy(w))
                     samples_per_client.append(local_total)

@@ -27,7 +27,7 @@ class User(object):
 
                 target_pred = model(seq, fixed)
 
-                loss = self.criterion(torch.squeeze(target_pred), target)
+                loss = self.criterion(target_pred, target)
                 loss.backward()
                 optimizer.step()
 
