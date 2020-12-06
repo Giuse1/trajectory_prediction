@@ -36,7 +36,7 @@ def train_model(global_model, criterion, num_rounds, local_epochs, num_users, ba
                     local_model = User(dataloader=trainloader_list[idx], id=idx, criterion=criterion,
                                               local_epochs=local_epochs, learning_rate=learning_rate)
                     w, local_loss, local_correct, local_total = local_model.update_weights(
-                        model=copy.deepcopy(global_model).double())
+                        model=copy.deepcopy(global_model).float())
                     local_weights.append(copy.deepcopy(w))
                     samples_per_client.append(local_total)
 
@@ -44,11 +44,12 @@ def train_model(global_model, criterion, num_rounds, local_epochs, num_users, ba
                 global_model.load_state_dict(global_weights)
 
             else:
-                val_loss_r, val_accuracy_r = model_evaluation(model=global_model.double(),
+                val_loss_r = model_evaluation(model=global_model.float(),
                                                               dataloader=valloader, criterion=criterion)
 
+
                 val_loss.append(val_loss_r)
-                print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, val_loss_r, val_accuracy_r))
+                print('{} Loss: {:.4f}'.format(phase, val_loss_r))
 
     return train_loss, val_loss,
 
@@ -80,13 +81,13 @@ def train_model_aggregated(global_model, criterion, num_rounds, local_epochs,tot
 
                         if j == 0:
                             w, local_loss, local_correct, local_total = local_model.update_weights(
-                                model=copy.deepcopy(global_model).double())
+                                model=copy.deepcopy(global_model).float())
                             samples_per_client.append(local_total)
                         else:
                             model_tmp = copy.deepcopy(global_model)
                             model_tmp.load_state_dict(w)
                             w, local_loss, local_correct, local_total = local_model.update_weights(
-                                model=model_tmp.double())
+                                model=model_tmp.float())
                             samples_per_client[i] += local_total
 
                     local_weights.append(copy.deepcopy(w))
@@ -95,7 +96,7 @@ def train_model_aggregated(global_model, criterion, num_rounds, local_epochs,tot
                 global_model.load_state_dict(global_weights)
 
             else:
-                val_loss_r, val_accuracy_r = model_evaluation(model=global_model.double(),
+                val_loss_r, val_accuracy_r = model_evaluation(model=global_model.float(),
                                                               dataloader=valloader, criterion=criterion)
 
                 val_loss.append(val_loss_r)
@@ -105,29 +106,21 @@ def train_model_aggregated(global_model, criterion, num_rounds, local_epochs,tot
     return train_loss, train_acc, val_loss, val_acc
 
 
-def model_evaluation(model, dataloader, criterion):
+def model_evaluation(model, dataloader_list, criterion):
     with torch.no_grad():
         model.eval()
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        running_loss = 0.0
-        running_corrects = 0
-        running_total = 0
+        local_loss = 0
+        for dataloader in dataloader_list:
+            for sample in dataloader:
+                seq = sample["seq"].float().to(device)
+                target = sample["target"].float().to(device)
+                fixed = sample["fixed"].float().to(device)
+                target_pred = model(seq, fixed)
+                loss = criterion(torch.squeeze(target_pred), target,)
+                local_loss += loss.item()
 
-        for (i, data) in enumerate(dataloader):
-
-            inputs, labels = data[0].to(device), data[1].to(device)
-            outputs = model(inputs.double())
-            loss = criterion(outputs, labels)
-            _, preds = torch.max(outputs, 1)
-
-            running_loss += loss.item() * inputs.size(0)
-            running_corrects += torch.sum(preds == labels)
-            running_total += labels.shape[0]
-
-        epoch_loss = running_loss / running_total
-        epoch_acc = running_corrects.double() / running_total
-
-        return epoch_loss, epoch_acc
+        return local_loss
 
 
 def average_weights(w, samples_per_client):
