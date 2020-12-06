@@ -17,7 +17,7 @@ def train_model(global_model, criterion, num_rounds, local_epochs, num_users, ba
     info["new"] = info["index"].astype(str) + '_' + info["v_length"].astype(str) + '_' + info["v_Width"].astype(
         str) + '_' + info["v_Class"].astype(str)
 
-    trainloader_list, valloader = get_loaders(batch_size=batch_size, shuffle=True, info_dataset=info)
+    user_ids, trainloader_list, valloader = get_loaders(batch_size=batch_size, shuffle=True, info_dataset=info)
     total_num_users = len(trainloader_list)
     print(f"total_num_users: {total_num_users}")
 
@@ -30,7 +30,7 @@ def train_model(global_model, criterion, num_rounds, local_epochs, num_users, ba
                 local_weights = []
                 samples_per_client = []
 
-                random_list = random.sample(range(total_num_users), num_users)
+                random_list = random.sample(user_ids, num_users)
 
                 for idx in random_list:
                     local_model = User(dataloader=trainloader_list[idx], id=idx, criterion=criterion,

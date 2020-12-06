@@ -24,7 +24,6 @@ print(f"local_epochs: {local_epochs}")
 print(f"batch_size: {batch_size}")
 print(f"learning_rate: {learning_rate}")
 print(f"mode: {mode}")
-print(f"mode: {mode}")
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 criterion = nn.MSELoss()
