@@ -1,6 +1,7 @@
 from FL.FL_user import User
 import copy
 import torch
+import torch.nn as nn
 from FL.torch_dataset import get_loaders
 import numpy as np
 import pandas as pd
@@ -29,23 +30,28 @@ def train_model(global_model, criterion, num_rounds, local_epochs, num_users, ba
             if phase == 'train':
                 local_weights = []
                 samples_per_client = []
-
+                total_data = 0
+                total_loss = 0
                 random_list = random.sample(range(total_num_users), num_users)
 
                 for idx in random_list:
+                    #print(idx)
                     local_model = User(dataloader=trainloader_list[idx], id=idx, criterion=criterion,
                                               local_epochs=local_epochs, learning_rate=learning_rate)
-                    w, local_loss, local_total = local_model.update_weights(
+                    w, local_loss, total_local_data, local_total = local_model.update_weights(
                         model=copy.deepcopy(global_model).float())
+                    total_data += total_local_data
+                    total_loss += local_loss
                     local_weights.append(copy.deepcopy(w))
                     samples_per_client.append(local_total)
+                print('{} Loss: {:.4f}'.format(phase, total_loss/total_data))
 
                 global_weights = average_weights(local_weights, samples_per_client)
                 global_model.load_state_dict(global_weights)
 
             else:
                 val_loss_r = model_evaluation(model=global_model.float(),
-                                                              dataloader_list=valloader, criterion=criterion)
+                                                              dataloader_list=valloader)
 
 
                 val_loss.append(val_loss_r)
@@ -97,7 +103,7 @@ def train_model_aggregated(global_model, criterion, num_rounds, local_epochs,tot
 
             else:
                 val_loss_r, val_accuracy_r = model_evaluation(model=global_model.float(),
-                                                              dataloader=valloader, criterion=criterion)
+                                                              dataloader_list=valloader)
 
                 val_loss.append(val_loss_r)
                 val_acc.append(val_accuracy_r)
@@ -106,21 +112,26 @@ def train_model_aggregated(global_model, criterion, num_rounds, local_epochs,tot
     return train_loss, train_acc, val_loss, val_acc
 
 
-def model_evaluation(model, dataloader_list, criterion):
+def model_evaluation(model, dataloader_list):
     with torch.no_grad():
         model.eval()
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         local_loss = 0
-        for dataloader in dataloader_list:
+        local_total = 0
+        criterion = nn.MSELoss(reduction="sum")
+
+
+        for dataloader in dataloader_list[:50]:
             for sample in dataloader:
                 seq = sample["seq"].float().to(device)
                 target = sample["target"].float().to(device)
                 fixed = sample["fixed"].float().to(device)
                 target_pred = model(seq, fixed)
-                loss = criterion(target_pred, target,)
+                loss = criterion(target_pred, target)
                 local_loss += loss.item()
+                local_total += target.nelement()
 
-        return local_loss
+        return local_loss/local_total
 
 
 def average_weights(w, samples_per_client):

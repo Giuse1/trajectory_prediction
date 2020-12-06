@@ -1,6 +1,7 @@
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
+import torch.nn as nn
 
 
 class User(object):
@@ -16,6 +17,9 @@ class User(object):
         model.train()
         optimizer = torch.optim.SGD(model.parameters(), lr=self.learning_rate, momentum=0.9)
         local_loss = 0
+        local_total = 0
+        criterion = nn.MSELoss(reduction="sum")
+
         for _ in range(self.local_epochs):
 
             for sample in self.dataloader:
@@ -27,10 +31,12 @@ class User(object):
 
                 target_pred = model(seq, fixed)
 
-                loss = self.criterion(target_pred, target)
+                loss = criterion(target_pred, target)
                 loss.backward()
                 optimizer.step()
 
                 local_loss += loss.item()
+                local_total += target.nelement()
 
-        return model.state_dict(), local_loss, len(self.dataloader.dataset)
+
+        return model.state_dict(), local_loss, local_total, len(self.dataloader.dataset)

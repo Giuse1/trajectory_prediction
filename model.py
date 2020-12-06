@@ -7,7 +7,7 @@ class LSTMnn(nn.Module):
 
     def __init__(self, num_feat, hidden_dim, fixed_dim):
         super(LSTMnn, self).__init__()
-        self.lstm = nn.LSTM(num_feat, hidden_dim, batch_first=True, num_layers=2)
+        self.lstm = nn.LSTM(num_feat, hidden_dim, batch_first=True, num_layers=2, dropout=0.2)
         self.dense1 = nn.Linear(hidden_dim, 256)
         self.dense2 = nn.Linear(256, 128)
         self.dense3 = nn.Linear(128+fixed_dim, 2)
