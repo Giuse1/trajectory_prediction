@@ -45,7 +45,7 @@ def train_model(global_model, criterion, num_rounds, local_epochs, num_users, ba
 
             else:
                 val_loss_r = model_evaluation(model=global_model.float(),
-                                                              dataloader=valloader, criterion=criterion)
+                                                              dataloader_list=valloader, criterion=criterion)
 
 
                 val_loss.append(val_loss_r)
