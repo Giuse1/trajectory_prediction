@@ -117,7 +117,7 @@ def model_evaluation(model, dataloader_list, criterion):
                 target = sample["target"].float().to(device)
                 fixed = sample["fixed"].float().to(device)
                 target_pred = model(seq, fixed)
-                loss = criterion(torch.squeeze(target_pred), target,)
+                loss = criterion(target_pred, target,)
                 local_loss += loss.item()
 
         return local_loss
