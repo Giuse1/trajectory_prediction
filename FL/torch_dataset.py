@@ -55,6 +55,6 @@ def get_loaders(info_dataset, batch_size=8, shuffle=True):
 
     training_list = training_list[:num_training]
     print("training set lenght:" + str(len(training_list)))
-    users_ids = [int(i) for i in start_arr.keys()]
+    #users_ids = [int(i) for i in start_arr.keys()]
 
-    return users_ids, training_list, test_list
+    return training_list, test_list
