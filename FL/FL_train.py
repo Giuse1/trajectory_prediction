@@ -113,7 +113,7 @@ def train_model_aggregated(global_model, criterion, num_rounds, local_epochs, nu
                 global_model.load_state_dict(global_weights)
 
             else:
-                val_loss_r,  = model_evaluation(model=global_model.float(),
+                val_loss_r = model_evaluation(model=global_model.float(),
                                                               dataloader_list=valloader)
 
                 val_loss.append(val_loss_r)
