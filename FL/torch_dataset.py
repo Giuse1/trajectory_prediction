@@ -36,8 +36,8 @@ class UserDataset(Dataset):
 
 def get_loaders(info_dataset, batch_size=8, shuffle=True):
     training_list = []
-    p = '/content/drive/MyDrive/'
-    with open(p + 'dict.json', 'r') as fp:
+    p = '/content/drive/MyDrive/general_data/'
+    with open(p + 'start_arr.json', 'r') as fp:
         start_arr = json.load(fp)
 
     for k, v in list(start_arr.items()):
