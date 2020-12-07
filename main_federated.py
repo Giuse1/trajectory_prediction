@@ -8,17 +8,17 @@ torch.manual_seed(1)
 num_rounds = 150
 local_epochs = 1
 num_users = 100
-# users_per_group = 10
+users_per_group = 10
 batch_size = 8
-learning_rate = 0.0001
+learning_rate = 1e-6
 #path = "/content/drive/MyDrive/data_ngsim/"
 #list_files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
 #total_num_users = len(list_files)
-mode = "standard"
+mode = "hybrid"
 
 
 print(f"NUM_USERS: {num_users}")
-# print(f"users_per_group: {users_per_group}")
+print(f"users_per_group: {users_per_group}")
 print(f"num_rounds: {num_rounds}")
 print(f"local_epochs: {local_epochs}")
 print(f"batch_size: {batch_size}")
@@ -29,7 +29,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 criterion = nn.MSELoss()
 model_ft = LSTMnn(num_feat=15, hidden_dim=128 , fixed_dim=3)
 model_ft = model_ft.to(device)
-optimizer = torch.optim.Adam(model_ft.parameters(), lr=0.001)
+optimizer = torch.optim.Adam(model_ft.parameters(), lr=learning_rate)
 
 
 if mode == "standard":
@@ -38,7 +38,7 @@ if mode == "standard":
 
 elif mode == "hybrid":
     train_loss, train_acc, val_loss, val_acc = train_model_aggregated(model_ft, criterion, num_rounds=num_rounds,
-                                                           local_epochs=local_epochs, total_num_users=total_num_users,
+                                                           local_epochs=local_epochs,
                                                            num_users=num_users,
                                                            users_per_group=users_per_group, batch_size=batch_size,
                                                            learning_rate=learning_rate, iid=True)

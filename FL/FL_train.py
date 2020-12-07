@@ -62,10 +62,17 @@ def train_model(global_model, criterion, num_rounds, local_epochs, num_users, ba
 
 def train_model_aggregated(global_model, criterion, num_rounds, local_epochs,total_num_users, num_users, users_per_group, batch_size,
                            learning_rate, iid):
-    train_loss, train_acc = [], []
-    val_loss, val_acc = [], []
+    train_loss = []
+    val_loss = []
+    info = pd.read_csv("/content/drive/MyDrive/general_data/correct_info.csv").drop(["Unnamed: 0"], axis=1)
 
-    trainloader_list, valloader = cifar_one_class_per_user(batch_size=batch_size, total_num_clients=total_num_users, shuffle=True)
+    info["new"] = info["index"].astype(str) + '_' + info["v_length"].astype(str) + '_' + info["v_Width"].astype(
+        str) + '_' + info["v_Class"].astype(str)
+
+    trainloader_list, valloader = get_loaders(batch_size=batch_size, shuffle=True, info_dataset=info)
+    total_num_users = len(trainloader_list)
+    print(f"total_num_users: {total_num_users}")
+
 
     num_groups = int(num_users / users_per_group)
     for round in range(num_rounds):
@@ -76,40 +83,43 @@ def train_model_aggregated(global_model, criterion, num_rounds, local_epochs,tot
             if phase == 'train':
                 local_weights = []
                 samples_per_client = []
+                total_data = 0
+                total_loss = 0
 
                 random_list = random.sample(range(total_num_users), num_users)
 
                 for i in range(int(num_groups)):
                     for j in range(users_per_group):
                         idx = random_list[j + i * users_per_group]
-                        local_model = LocalUpdate(dataloader=trainloader_list[idx], id=idx, criterion=criterion,
+                        local_model = User(dataloader=trainloader_list[idx], id=idx, criterion=criterion,
                                                   local_epochs=local_epochs, learning_rate=learning_rate)
 
                         if j == 0:
-                            w, local_loss, local_correct, local_total = local_model.update_weights(
+                            w, local_loss, total_local_data, local_total = local_model.update_weights(
                                 model=copy.deepcopy(global_model).float())
                             samples_per_client.append(local_total)
                         else:
                             model_tmp = copy.deepcopy(global_model)
                             model_tmp.load_state_dict(w)
-                            w, local_loss, local_correct, local_total = local_model.update_weights(
+                            w, local_loss, total_local_data, local_total = local_model.update_weights(
                                 model=model_tmp.float())
                             samples_per_client[i] += local_total
-
+                    total_data += total_local_data
+                    total_loss += local_loss
                     local_weights.append(copy.deepcopy(w))
 
+                print('{} Loss: {:.4f}'.format(phase, total_loss/total_data))
                 global_weights = average_weights(local_weights, samples_per_client)
                 global_model.load_state_dict(global_weights)
 
             else:
-                val_loss_r, val_accuracy_r = model_evaluation(model=global_model.float(),
+                val_loss_r,  = model_evaluation(model=global_model.float(),
                                                               dataloader_list=valloader)
 
                 val_loss.append(val_loss_r)
-                val_acc.append(val_accuracy_r)
-                print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, val_loss_r, val_accuracy_r))
+                print('{} Loss: {:.4f}'.format(phase, val_loss_r))
 
-    return train_loss, train_acc, val_loss, val_acc
+    return train_loss, val_loss
 
 
 def model_evaluation(model, dataloader_list):
