@@ -60,7 +60,7 @@ def train_model(global_model, criterion, num_rounds, local_epochs, num_users, ba
     return train_loss, val_loss,
 
 
-def train_model_aggregated(global_model, criterion, num_rounds, local_epochs,total_num_users, num_users, users_per_group, batch_size,
+def train_model_aggregated(global_model, criterion, num_rounds, local_epochs, num_users, users_per_group, batch_size,
                            learning_rate, iid):
     train_loss = []
     val_loss = []
