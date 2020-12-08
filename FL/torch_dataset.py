@@ -42,11 +42,14 @@ def get_loaders(info_dataset, batch_size=8, shuffle=True):
 
     list_files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
     total_num_users = len(list_files)
-
+    training_list = {}
     for i in range(total_num_users):
         data = UserDataset(idx=i, info=info_dataset, start_info=start_arr)
-        loader = DataLoader(data, batch_size=batch_size, shuffle=shuffle)
-        training_list.append(loader)
+        try:
+            loader = DataLoader(data, batch_size=batch_size, shuffle=shuffle)
+            training_list[i] = loader
+        except:
+            pass
 
     #num_training = int(0.9 * len(training_list))
     #test_list = training_list[num_training:]
