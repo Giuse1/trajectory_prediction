@@ -5,7 +5,7 @@ from FL.FL_train import train_model_aggregated, train_model
 import os
 torch.manual_seed(1)
 
-num_rounds = 150
+num_rounds = 100
 local_epochs = 1
 num_users = 100
 users_per_group = 10
