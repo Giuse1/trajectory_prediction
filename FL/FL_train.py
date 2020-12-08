@@ -175,7 +175,7 @@ def get_nonrandoom_iids(d, correct_vehicles_ids, num_groups, users_per_group):
     vehicles_ids = [int(x) for x in correct_vehicles_ids]
 
     for g in range(num_groups):
-        to_append = random.sample(correct_vehicles_ids, 1)[0]
+        to_append = random.sample(vehicles_ids, 1)[0]
         l.append(int(to_append))
         vehicles_ids.remove(to_append)
 
