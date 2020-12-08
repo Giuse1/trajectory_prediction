@@ -36,9 +36,17 @@ if mode == "standard":
     train_loss, train_acc, val_loss, val_acc = train_model(model_ft, criterion, num_rounds=num_rounds, local_epochs=local_epochs, num_users=num_users,
                                                        batch_size=batch_size, learning_rate=learning_rate, iid=True)
 
-elif mode == "hybrid":
+elif mode == "hybrid_random":
     train_loss, train_acc, val_loss, val_acc = train_model_aggregated(model_ft, criterion, num_rounds=num_rounds,
                                                            local_epochs=local_epochs,
                                                            num_users=num_users,
                                                            users_per_group=users_per_group, batch_size=batch_size,
-                                                           learning_rate=learning_rate, iid=True)
+                                                           learning_rate=learning_rate, iid=True, mode=mode)
+
+elif mode == "hybrid_non_random":
+    train_loss, train_acc, val_loss, val_acc = train_model_aggregated(model_ft, criterion, num_rounds=num_rounds,
+                                                           local_epochs=local_epochs,
+                                                           num_users=num_users,
+                                                           users_per_group=users_per_group, batch_size=batch_size,
+                                                           learning_rate=learning_rate, iid=True, mode=mode)
+

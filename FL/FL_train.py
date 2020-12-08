@@ -62,7 +62,7 @@ def train_model(global_model, criterion, num_rounds, local_epochs, num_users, ba
 
 
 def train_model_aggregated(global_model, criterion, num_rounds, local_epochs, num_users, users_per_group, batch_size,
-                           learning_rate, iid):
+                           learning_rate, iid, mode):
     train_loss = []
     val_loss = []
     info = pd.read_csv("/content/drive/MyDrive/general_data/correct_info.csv").drop(["Unnamed: 0"], axis=1)
@@ -90,8 +90,10 @@ def train_model_aggregated(global_model, criterion, num_rounds, local_epochs, nu
                 total_data = 0
                 total_loss = 0
 
-                #random_list = random.sample(range(total_num_users), num_users)
-                random_list = get_nonrandoom_iids(distances_dict, correct_ids, num_groups, users_per_group)
+                if mode =="hybrid_random":
+                    random_list = random.sample(range(total_num_users), num_users)
+                elif mode =="hybrid_non_random":
+                    random_list = get_nonrandoom_iids(distances_dict, correct_ids, num_groups, users_per_group)
 
 
                 for i in range(int(num_groups)):
