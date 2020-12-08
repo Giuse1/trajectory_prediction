@@ -3,7 +3,7 @@ from torch.utils.data import Dataset, DataLoader
 import random
 import json
 import numpy as np
-
+import os
 random.seed(0)
 
 
@@ -32,7 +32,33 @@ class UserDataset(Dataset):
 
 
 def get_loaders(info_dataset, batch_size=8, shuffle=True):
+
+    p = '/content/drive/MyDrive/general_data/'
+    with open(p + 'start_arr.json', 'r') as fp:
+        start_arr = json.load(fp)
+
     training_list = []
+    path = "/content/drive/MyDrive/data_ngsim_np/"
+
+    list_files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+    total_num_users = len(list_files)
+
+    for i in range(total_num_users):
+        data = UserDataset(idx=i, info=info_dataset, start_info=start_arr)
+        loader = DataLoader(data, batch_size=batch_size, shuffle=shuffle)
+        training_list.append(loader)
+
+    #num_training = int(0.9 * len(training_list))
+    #test_list = training_list[num_training:]
+    #print("test set lenght:" + str(len(test_list)))
+
+    #training_list = training_list[:num_training]
+    #print("training set lenght:" + str(len(training_list)))
+
+    return training_list
+
+
+def get_correct_ids():
     p = '/content/drive/MyDrive/general_data/'
     with open(p + 'start_arr.json', 'r') as fp:
         start_arr = json.load(fp)
@@ -41,18 +67,11 @@ def get_loaders(info_dataset, batch_size=8, shuffle=True):
         if start_arr[k] == []:
             del start_arr[k]
 
-    for i in start_arr.keys():
-        data = UserDataset(idx=i, info=info_dataset, start_info=start_arr)
-        loader = DataLoader(data, batch_size=batch_size, shuffle=shuffle)
-        training_list.append(loader)
-
-    num_training = int(0.9 * len(training_list))
-    test_list = training_list[num_training:]
-    print("test set lenght:" + str(len(test_list)))
-
-    training_list = training_list[:num_training]
-    print("training set lenght:" + str(len(training_list)))
     correct_vehicles_ids = list(start_arr.keys())
     correct_vehicles_ids = [float(x) for x in correct_vehicles_ids]
 
-    return correct_vehicles_ids, training_list, test_list
+    return correct_vehicles_ids
+#funzione a parte per correct ids
+#fare tutti i dataloaders
+#random sampling da correct ids
+#per gruppi non random -> togliere dal dizionario elementi non apprtenenti a correct ids

@@ -2,8 +2,7 @@ from FL.FL_user import User
 import copy
 import torch
 import torch.nn as nn
-from FL.torch_dataset import get_loaders
-import numpy as np
+from FL.torch_dataset import get_loaders, get_correct_ids
 import pandas as pd
 import json
 import random
@@ -14,14 +13,18 @@ def train_model(global_model, criterion, num_rounds, local_epochs, num_users, ba
     train_loss = []
     val_loss = []
     info = pd.read_csv("/content/drive/MyDrive/general_data/correct_info.csv").drop(["Unnamed: 0"], axis=1)
-    #info = pd.read_csv("data/info_vehicles.csv").drop(["Unnamed: 0"], axis=1)
 
     info["new"] = info["index"].astype(str) + '_' + info["v_length"].astype(str) + '_' + info["v_Width"].astype(
         str) + '_' + info["v_Class"].astype(str)
 
-    _, trainloader_list, valloader = get_loaders(batch_size=batch_size, shuffle=True, info_dataset=info)
-    total_num_users = len(trainloader_list)
-    print(f"total_num_users: {total_num_users}")
+    users_ids = get_correct_ids()
+    all_list = get_loaders(batch_size=batch_size, shuffle=True, info_dataset=info)
+    total_num_users = len(users_ids)
+    training_ids = random.sample(users_ids, int(0.9*total_num_users))
+    test_ids = list(set(users_ids) - set(training_ids))
+    print("total users: " +str(total_num_users))
+    print("training set lenght:" + str(len(training_ids)))
+    print("test set lenght:" + str(len(test_ids)))
 
     for round in range(num_rounds):
         print('-' * 10)
@@ -33,11 +36,11 @@ def train_model(global_model, criterion, num_rounds, local_epochs, num_users, ba
                 samples_per_client = []
                 total_data = 0
                 total_loss = 0
-                random_list = random.sample(range(total_num_users), num_users)
+                random_list = random.sample(training_ids, num_users)
 
                 for idx in random_list:
                     #print(idx)
-                    local_model = User(dataloader=trainloader_list[idx], id=idx, criterion=criterion,
+                    local_model = User(dataloader=all_list[idx], id=idx, criterion=criterion,
                                               local_epochs=local_epochs, learning_rate=learning_rate)
                     w, local_loss, total_local_data, local_total = local_model.update_weights(
                         model=copy.deepcopy(global_model).float())
@@ -51,8 +54,7 @@ def train_model(global_model, criterion, num_rounds, local_epochs, num_users, ba
                 global_model.load_state_dict(global_weights)
 
             else:
-                val_loss_r = model_evaluation(model=global_model.float(),
-                                                              dataloader_list=valloader)
+                val_loss_r = model_evaluation(model=global_model.float(), dataloader_list=all_list, indeces=test_ids)
 
 
                 val_loss.append(val_loss_r)
@@ -70,9 +72,14 @@ def train_model_aggregated(global_model, criterion, num_rounds, local_epochs, nu
     info["new"] = info["index"].astype(str) + '_' + info["v_length"].astype(str) + '_' + info["v_Width"].astype(
         str) + '_' + info["v_Class"].astype(str)
 
-    correct_ids, trainloader_list, valloader = get_loaders(batch_size=batch_size, shuffle=True, info_dataset=info)
-    total_num_users = len(trainloader_list)
-    print(f"total_num_users: {total_num_users}")
+    users_ids = get_correct_ids()
+    all_list = get_loaders(batch_size=batch_size, shuffle=True, info_dataset=info)
+    total_num_users = len(users_ids)
+    training_ids = random.sample(users_ids, int(0.9 * total_num_users))
+    test_ids = list(set(users_ids) - set(training_ids))
+    print("total users: " + str(total_num_users))
+    print("training set lenght:" + str(len(training_ids)))
+    print("test set lenght:" + str(len(test_ids)))
 
     with open('/content/drive/MyDrive/general_data/distances.json', 'r') as fp:
         distances_dict = json.load(fp)
@@ -91,15 +98,14 @@ def train_model_aggregated(global_model, criterion, num_rounds, local_epochs, nu
                 total_loss = 0
 
                 if mode =="hybrid_random":
-                    random_list = random.sample(range(total_num_users), num_users)
+                    random_list = random.sample(training_ids, num_users)
                 elif mode =="hybrid_non_random":
-                    random_list = get_nonrandoom_iids(distances_dict, correct_ids, num_groups, users_per_group)
-
+                    random_list = get_nonrandoom_iids(distances_dict, users_ids, num_groups, users_per_group)
 
                 for i in range(int(num_groups)):
                     for j in range(users_per_group):
                         idx = random_list[j + i * users_per_group]
-                        local_model = User(dataloader=trainloader_list[idx], id=idx, criterion=criterion,
+                        local_model = User(dataloader=all_list[idx], id=idx, criterion=criterion,
                                                   local_epochs=local_epochs, learning_rate=learning_rate)
 
                         if j == 0:
@@ -121,8 +127,7 @@ def train_model_aggregated(global_model, criterion, num_rounds, local_epochs, nu
                 global_model.load_state_dict(global_weights)
 
             else:
-                val_loss_r = model_evaluation(model=global_model.float(),
-                                                              dataloader_list=valloader)
+                val_loss_r = model_evaluation(model=global_model.float(), dataloader_list=all_list, indeces=test_ids)
 
                 val_loss.append(val_loss_r)
                 print('{} Loss: {:.4f}'.format(phase, val_loss_r))
@@ -130,7 +135,7 @@ def train_model_aggregated(global_model, criterion, num_rounds, local_epochs, nu
     return train_loss, val_loss
 
 
-def model_evaluation(model, dataloader_list):
+def model_evaluation(model, dataloader_list, indeces):
     with torch.no_grad():
         model.eval()
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -138,8 +143,8 @@ def model_evaluation(model, dataloader_list):
         local_total = 0
         criterion = nn.MSELoss(reduction="sum")
 
-
-        for dataloader in dataloader_list[:50]:
+        for ind in indeces[:50]:
+            dataloader = dataloader_list[ind]
             for sample in dataloader:
                 seq = sample["seq"].float().to(device)
                 target = sample["target"].float().to(device)
@@ -170,18 +175,21 @@ def get_nonrandoom_iids(d, correct_vehicles_ids, num_groups, users_per_group):
     vehicles_ids = [int(x) for x in correct_vehicles_ids]
 
     for g in range(num_groups):
-        tmp = random.sample(correct_vehicles_ids, 1)[0]
-        l.append(int(tmp))
-        vehicles_ids.remove(tmp)
+        to_append = random.sample(correct_vehicles_ids, 1)[0]
+        l.append(int(to_append))
+        vehicles_ids.remove(to_append)
 
         for i in range(users_per_group - 1):
 
             j = 0
-            tmp = d[str(int(tmp))][j]
-            while tmp in l:
-                tmp = d[str(int(tmp))][j]
+            tmp_dict = d[str(int(to_append))]
+            tmp = tmp_dict[j]
+            while tmp in l or tmp not in vehicles_ids:
+                tmp = tmp_dict[j]
                 j += 1
 
-            l.append(tmp)
-            vehicles_ids.remove(tmp)
-    return  l
+            to_append = tmp
+            l.append(to_append)
+            vehicles_ids.remove(to_append)
+
+    return l
