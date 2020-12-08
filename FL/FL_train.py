@@ -5,6 +5,7 @@ import torch.nn as nn
 from FL.torch_dataset import get_loaders
 import numpy as np
 import pandas as pd
+import json
 import random
 random.seed(0)
 
@@ -18,7 +19,7 @@ def train_model(global_model, criterion, num_rounds, local_epochs, num_users, ba
     info["new"] = info["index"].astype(str) + '_' + info["v_length"].astype(str) + '_' + info["v_Width"].astype(
         str) + '_' + info["v_Class"].astype(str)
 
-    trainloader_list, valloader = get_loaders(batch_size=batch_size, shuffle=True, info_dataset=info)
+    _, trainloader_list, valloader = get_loaders(batch_size=batch_size, shuffle=True, info_dataset=info)
     total_num_users = len(trainloader_list)
     print(f"total_num_users: {total_num_users}")
 
@@ -69,9 +70,12 @@ def train_model_aggregated(global_model, criterion, num_rounds, local_epochs, nu
     info["new"] = info["index"].astype(str) + '_' + info["v_length"].astype(str) + '_' + info["v_Width"].astype(
         str) + '_' + info["v_Class"].astype(str)
 
-    trainloader_list, valloader = get_loaders(batch_size=batch_size, shuffle=True, info_dataset=info)
+    correct_ids, trainloader_list, valloader = get_loaders(batch_size=batch_size, shuffle=True, info_dataset=info)
     total_num_users = len(trainloader_list)
     print(f"total_num_users: {total_num_users}")
+
+    with open('/content/drive/MyDrive/general_data/distances.json', 'r') as fp:
+        distances_dict = json.load(fp)
 
 
     num_groups = int(num_users / users_per_group)
@@ -86,7 +90,9 @@ def train_model_aggregated(global_model, criterion, num_rounds, local_epochs, nu
                 total_data = 0
                 total_loss = 0
 
-                random_list = random.sample(range(total_num_users), num_users)
+                #random_list = random.sample(range(total_num_users), num_users)
+                random_list = get_nonrandoom_iids(distances_dict, correct_ids, num_groups, users_per_group)
+
 
                 for i in range(int(num_groups)):
                     for j in range(users_per_group):
@@ -155,3 +161,25 @@ def average_weights(w, samples_per_client):
                 w_avg[key] += torch.true_divide(w[i][key], 1 / samples_per_client[i])
         w_avg[key] = torch.true_divide(w_avg[key], sum(samples_per_client))
     return w_avg
+
+def get_nonrandoom_iids(d, correct_vehicles_ids, num_groups, users_per_group):
+
+    l = []
+    vehicles_ids = [int(x) for x in correct_vehicles_ids]
+
+    for g in range(num_groups):
+        tmp = random.sample(correct_vehicles_ids, 1)[0]
+        l.append(int(tmp))
+        vehicles_ids.remove(tmp)
+
+        for i in range(users_per_group - 1):
+
+            j = 0
+            tmp = d[str(int(tmp))][j]
+            while tmp in l:
+                tmp = d[str(int(tmp))][j]
+                j += 1
+
+            l.append(tmp)
+            vehicles_ids.remove(tmp)
+    return  l

@@ -1,10 +1,7 @@
-import pandas as pd
 import torch
-from sklearn.preprocessing import MinMaxScaler
 from torch.utils.data import Dataset, DataLoader
 import random
 import json
-import os
 import numpy as np
 
 random.seed(0)
@@ -55,6 +52,7 @@ def get_loaders(info_dataset, batch_size=8, shuffle=True):
 
     training_list = training_list[:num_training]
     print("training set lenght:" + str(len(training_list)))
-    #users_ids = [int(i) for i in start_arr.keys()]
+    correct_vehicles_ids = list(start_arr.keys())
+    correct_vehicles_ids = [float(x) for x in correct_vehicles_ids]
 
-    return training_list, test_list
+    return correct_vehicles_ids, training_list, test_list
