@@ -9,7 +9,7 @@ import random
 random.seed(0)
 
 
-def train_model(global_model, criterion, num_rounds, local_epochs, num_users, batch_size, learning_rate, iid):
+def train_model(global_model, criterion, num_rounds, local_epochs, num_users, batch_size, learning_rate):
     train_loss = []
     val_loss = []
     info = pd.read_csv("/content/drive/MyDrive/general_data/correct_info.csv").drop(["Unnamed: 0"], axis=1)
@@ -64,7 +64,7 @@ def train_model(global_model, criterion, num_rounds, local_epochs, num_users, ba
 
 
 def train_model_aggregated(global_model, criterion, num_rounds, local_epochs, num_users, users_per_group, batch_size,
-                           learning_rate, iid, mode):
+                           learning_rate, mode):
     train_loss = []
     val_loss = []
     info = pd.read_csv("/content/drive/MyDrive/general_data/correct_info.csv").drop(["Unnamed: 0"], axis=1)
@@ -100,11 +100,80 @@ def train_model_aggregated(global_model, criterion, num_rounds, local_epochs, nu
                 if mode =="hybrid_random":
                     random_list = random.sample(training_ids, num_users)
                 elif mode =="hybrid_non_random":
-                    random_list = get_nonrandoom_iids(distances_dict, users_ids, num_groups, users_per_group)
+                    random_list = get_nonrandom_ids(distances_dict, users_ids, num_groups, users_per_group)
 
                 for i in range(int(num_groups)):
                     for j in range(users_per_group):
                         idx = random_list[j + i * users_per_group]
+                        local_model = User(dataloader=all_list[idx], id=idx, criterion=criterion,
+                                                  local_epochs=local_epochs, learning_rate=learning_rate)
+
+                        if j == 0:
+                            w, local_loss, total_local_data, local_total = local_model.update_weights(
+                                model=copy.deepcopy(global_model).float())
+                            samples_per_client.append(local_total)
+                        else:
+                            model_tmp = copy.deepcopy(global_model)
+                            model_tmp.load_state_dict(w)
+                            w, local_loss, total_local_data, local_total = local_model.update_weights(
+                                model=model_tmp.float())
+                            samples_per_client[i] += local_total
+                    total_data += total_local_data
+                    total_loss += local_loss
+                    local_weights.append(copy.deepcopy(w))
+
+                print('{} Loss: {:.4f}'.format(phase, total_loss/total_data))
+                global_weights = average_weights(local_weights, samples_per_client)
+                global_model.load_state_dict(global_weights)
+
+            else:
+                val_loss_r = model_evaluation(model=global_model.float(), dataloader_list=all_list, indeces=test_ids)
+
+                val_loss.append(val_loss_r)
+                print('{} Loss: {:.4f}'.format(phase, val_loss_r))
+
+    return train_loss, val_loss
+
+
+def train_model_aggregated_small_groups(global_model, criterion, num_rounds, local_epochs, num_users, users_per_group, batch_size,
+                           learning_rate):
+    train_loss = []
+    val_loss = []
+    info = pd.read_csv("/content/drive/MyDrive/general_data/correct_info.csv").drop(["Unnamed: 0"], axis=1)
+
+    info["new"] = info["index"].astype(str) + '_' + info["v_length"].astype(str) + '_' + info["v_Width"].astype(
+        str) + '_' + info["v_Class"].astype(str)
+
+    users_ids = get_correct_ids()
+    all_list = get_loaders(batch_size=batch_size, shuffle=True, info_dataset=info)
+    total_num_users = len(users_ids)
+    training_ids = random.sample(users_ids, int(0.9 * total_num_users))
+    test_ids = list(set(users_ids) - set(training_ids))
+    print("total users: " + str(total_num_users))
+    print("training set lenght:" + str(len(training_ids)))
+    print("test set lenght:" + str(len(test_ids)))
+
+    with open('/content/drive/MyDrive/general_data/distances.json', 'r') as fp:
+        distances_dict = json.load(fp)
+
+
+    num_groups = int(num_users / users_per_group)
+    for round in range(num_rounds):
+        print('-' * 10)
+        print('Epoch {}/{}'.format(round, num_rounds - 1))
+
+        for phase in ['train', 'val']:
+            if phase == 'train':
+                local_weights = []
+                samples_per_client = []
+                total_data = 0
+                total_loss = 0
+
+                list_of_list = get_nonrandom_ids_small_groups(distances_dict, users_ids, num_groups, users_per_group)
+
+                for i, l in enumerate(list_of_list):
+                    for j, idx in enumerate(l):
+
                         local_model = User(dataloader=all_list[idx], id=idx, criterion=criterion,
                                                   local_epochs=local_epochs, learning_rate=learning_rate)
 
@@ -169,11 +238,11 @@ def average_weights(w, samples_per_client):
         w_avg[key] = torch.true_divide(w_avg[key], sum(samples_per_client))
     return w_avg
 
-def get_nonrandoom_iids(d, correct_vehicles_ids, num_groups, users_per_group):
+def get_nonrandom_ids(d, correct_vehicles_ids, num_groups, users_per_group):
 
     l = []
     vehicles_ids = [int(x) for x in correct_vehicles_ids]
-
+    vehicles_ids.remove(2595)
     for g in range(num_groups):
         to_append = random.sample(vehicles_ids, 1)[0]
         l.append(int(to_append))
@@ -193,3 +262,42 @@ def get_nonrandoom_iids(d, correct_vehicles_ids, num_groups, users_per_group):
             vehicles_ids.remove(to_append)
 
     return l
+
+
+def get_nonrandom_ids_small_groups(d, correct_vehicles_ids, num_groups, users_per_group):
+    list_of_list = []
+    vehicles_ids = [int(x) for x in correct_vehicles_ids]
+    vehicles_ids.remove(2595)
+    #vehicles_ids.remove(2580)
+
+    for g in range(num_groups):
+        l = []
+        to_append = random.sample(vehicles_ids, 1)[0]
+        l.append(int(to_append))
+        vehicles_ids.remove(to_append)
+        stop = False
+        for i in range(users_per_group - 1):
+            j = 0
+            tmp_list = d[str(int(to_append))]
+            # print(to_append)
+            tmp = tmp_list[j]
+            while tmp in l or tmp not in vehicles_ids:
+                j += 1
+                if j == len(tmp_list):
+                    #print("STOP")
+                    stop = True
+                    break
+                else:
+                    tmp = tmp_list[j]
+
+            if stop != True:
+                to_append = tmp
+                l.append(to_append)
+                vehicles_ids.remove(to_append)
+            else:
+                break
+        #if (len(l)) != 10:
+        #    print(len(l))
+        list_of_list.append(l)
+
+    return list_of_list
