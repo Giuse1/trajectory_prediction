@@ -9,7 +9,7 @@ num_rounds = 100
 local_epochs = 1
 num_users = 100
 users_per_group = 10
-batch_size = 8
+batch_size = 16
 learning_rate = 1e-6
 #path = "/content/drive/MyDrive/data_ngsim/"
 #list_files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
@@ -27,7 +27,7 @@ print(f"mode: {mode}")
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 criterion = nn.MSELoss()
-model_ft = LSTMnn(num_feat=15, hidden_dim=128 , fixed_dim=3)
+model_ft = LSTMnn(num_feat=11, hidden_dim=128 , fixed_dim=3)
 model_ft = model_ft.to(device)
 optimizer = torch.optim.Adam(model_ft.parameters(), lr=learning_rate)
 
