@@ -5,6 +5,18 @@ from FL.FL_train import train_model_aggregated, train_model, train_model_aggrega
 import os
 torch.manual_seed(1)
 
+
+class RMSELoss(nn.Module):
+    def __init__(self, eps=1e-6):
+        super().__init__()
+        self.mse = nn.MSELoss()
+        self.eps = eps
+
+    def forward(self, yhat, y):
+        loss = torch.sqrt(self.mse(yhat, y) + self.eps)
+        return loss
+
+
 num_rounds = 100
 local_epochs = 1
 num_users = 100

@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 from FL.torch_dataset import get_loaders, get_correct_ids
 import pandas as pd
+from sklearn.preprocessing import MinMaxScaler
 import json
 import random
 random.seed(0)
@@ -25,6 +26,14 @@ def train_model(global_model, criterion, num_rounds, local_epochs, num_users, ba
     print("total users: " +str(total_num_users))
     print("training set lenght:" + str(len(training_ids)))
     print("test set lenght:" + str(len(test_ids)))
+
+    scaler_list = []
+    path = ""
+    for i in test_ids:
+        tmp = pd.read_csv(path+str(int(i))+"_r50.csv")[["Local_X", "Local_Y"]]
+        scaler = MinMaxScaler(feature_range=(-5,5))
+        scaler.fit(tmp)
+        scaler_list.append(scaler)
 
     for round in range(num_rounds):
         print('-' * 10)
@@ -54,7 +63,7 @@ def train_model(global_model, criterion, num_rounds, local_epochs, num_users, ba
                 global_model.load_state_dict(global_weights)
 
             else:
-                val_loss_r = model_evaluation(model=global_model.float(), dataloader_list=all_list, indeces=test_ids)
+                val_loss_r = model_evaluation(model=global_model.float(), dataloader_list=all_list, indeces=test_ids, scaler_list=scaler_list)
 
 
                 val_loss.append(val_loss_r)
@@ -204,7 +213,7 @@ def train_model_aggregated_small_groups(global_model, criterion, num_rounds, loc
     return train_loss, val_loss
 
 
-def model_evaluation(model, dataloader_list, indeces):
+def model_evaluation(model, dataloader_list, indeces, scaler_list):
     with torch.no_grad():
         model.eval()
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -213,12 +222,18 @@ def model_evaluation(model, dataloader_list, indeces):
         criterion = nn.MSELoss(reduction="sum")
 
         for ind in indeces[:50]:
+            scaler = scaler_list[int(ind)]
             dataloader = dataloader_list[ind]
             for sample in dataloader:
                 seq = sample["seq"].float().to(device)
                 target = sample["target"].float().to(device)
                 fixed = sample["fixed"].float().to(device)
+
                 target_pred = model(seq, fixed)
+
+                scaled_target = [scaler.inverse_transform(x.detach().cpu().numpy()) for x in target]
+                scaled_pred = [scaler.inverse_transform(x.detach().cpu().numpy()) for x in target_pred]
+
                 loss = criterion(target_pred, target)
                 local_loss += loss.item()
                 local_total += target.nelement()
