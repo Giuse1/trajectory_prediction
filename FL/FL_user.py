@@ -13,7 +13,7 @@ class User(object):
 
     def update_weights(self, model):
         model.train()
-        optimizer = torch.optim.SGD(model.parameters(), lr=self.learning_rate, momentum=0.9)
+        optimizer = torch.optim.SGD(model.parameters(), lr=self.learning_rate)
         local_loss = 0
         local_total = 0
         criterion = nn.MSELoss(reduction="sum")
