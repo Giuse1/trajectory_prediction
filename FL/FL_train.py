@@ -173,6 +173,14 @@ def train_model_aggregated_small_groups(global_model, criterion, num_rounds, loc
     with open('/content/drive/MyDrive/general_data/distances.json', 'r') as fp:
         distances_dict = json.load(fp)
 
+    scaler_list = []
+    path = "/content/drive/MyDrive/data_ngsim/"
+    for i in test_ids:
+        tmp = pd.read_csv(path + str(int(i)) + "_r50.csv")[["Local_X", "Local_Y"]]
+        scaler = MinMaxScaler(feature_range=(-5, 5))
+        scaler.fit(tmp)
+        scaler_list.append(scaler)
+
 
     num_groups = int(num_users / users_per_group)
     for round in range(num_rounds):
@@ -213,7 +221,7 @@ def train_model_aggregated_small_groups(global_model, criterion, num_rounds, loc
                 global_model.load_state_dict(global_weights)
 
             else:
-                val_loss_r = model_evaluation(model=global_model.float(), dataloader_list=all_list, indeces=test_ids)
+                val_loss_r = model_evaluation(model=global_model.float(), dataloader_list=all_list, indeces=test_ids, scaler_list=scaler_list)
 
                 val_loss.append(val_loss_r)
                 print('{} Loss: {:.4f}'.format(phase, val_loss_r))
