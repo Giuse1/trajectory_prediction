@@ -30,7 +30,7 @@ def train_model(global_model, criterion, num_rounds, local_epochs, num_users, ba
 
     scaler_list = []
     path = "/content/drive/MyDrive/data_ngsim/"
-    for i in test_ids[:50]:
+    for i in test_ids:
         tmp = pd.read_csv(path+str(int(i))+"_r50.csv")[["Local_X", "Local_Y"]]
         scaler = MinMaxScaler(feature_range=(-5,5))
         scaler.fit(tmp)
@@ -96,7 +96,7 @@ def train_model_aggregated(global_model, criterion, num_rounds, local_epochs, nu
 
     scaler_list = []
     path = "/content/drive/MyDrive/data_ngsim/"
-    for i in test_ids[:50]:
+    for i in test_ids:
         tmp = pd.read_csv(path+str(int(i))+"_r50.csv")[["Local_X", "Local_Y"]]
         scaler = MinMaxScaler(feature_range=(-5,5))
         scaler.fit(tmp)
@@ -229,7 +229,7 @@ def model_evaluation(model, dataloader_list, indeces, scaler_list):
         local_total = 0
         criterion = nn.MSELoss(reduction="sum")
 
-        for j, ind in enumerate(indeces[:50]):
+        for j, ind in enumerate(indeces):
             #print(ind)
             scaler = scaler_list[j]
             dataloader = dataloader_list[ind]
