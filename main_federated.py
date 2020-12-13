@@ -2,19 +2,7 @@ import torch
 import torch.nn as nn
 from model import LSTMnn
 from FL.FL_train import train_model_aggregated, train_model, train_model_aggregated_small_groups
-import os
 torch.manual_seed(1)
-
-
-class RMSELoss(nn.Module):
-    def __init__(self, eps=1e-6):
-        super().__init__()
-        self.mse = nn.MSELoss()
-        self.eps = eps
-
-    def forward(self, yhat, y):
-        loss = torch.sqrt(self.mse(yhat, y) + self.eps)
-        return loss
 
 
 num_rounds = 100
@@ -41,7 +29,6 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 criterion = nn.MSELoss()
 model_ft = LSTMnn(num_feat=15, hidden_dim=128 , fixed_dim=3)
 model_ft = model_ft.to(device)
-optimizer = torch.optim.Adam(model_ft.parameters(), lr=learning_rate)
 
 
 if mode == "standard":
