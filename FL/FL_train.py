@@ -5,6 +5,7 @@ import torch.nn as nn
 from FL.torch_dataset import get_loaders, get_correct_ids
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
+import numpy as np
 import json
 import random
 random.seed(0)
@@ -28,8 +29,8 @@ def train_model(global_model, criterion, num_rounds, local_epochs, num_users, ba
     print("test set lenght:" + str(len(test_ids)))
 
     scaler_list = []
-    path = ""
-    for i in test_ids:
+    path = "/content/drive/MyDrive/data_ngsim/"
+    for i in test_ids[:50]:
         tmp = pd.read_csv(path+str(int(i))+"_r50.csv")[["Local_X", "Local_Y"]]
         scaler = MinMaxScaler(feature_range=(-5,5))
         scaler.fit(tmp)
@@ -93,6 +94,13 @@ def train_model_aggregated(global_model, criterion, num_rounds, local_epochs, nu
     with open('/content/drive/MyDrive/general_data/distances.json', 'r') as fp:
         distances_dict = json.load(fp)
 
+    scaler_list = []
+    path = "/content/drive/MyDrive/data_ngsim/"
+    for i in test_ids[:50]:
+        tmp = pd.read_csv(path+str(int(i))+"_r50.csv")[["Local_X", "Local_Y"]]
+        scaler = MinMaxScaler(feature_range=(-5,5))
+        scaler.fit(tmp)
+        scaler_list.append(scaler)
 
     num_groups = int(num_users / users_per_group)
     for round in range(num_rounds):
@@ -109,7 +117,7 @@ def train_model_aggregated(global_model, criterion, num_rounds, local_epochs, nu
                 if mode =="hybrid_random":
                     random_list = random.sample(training_ids, num_users)
                 elif mode =="hybrid_non_random":
-                    random_list = get_nonrandom_ids(distances_dict, users_ids, num_groups, users_per_group)
+                    random_list = get_nonrandom_ids(distances_dict, training_ids, num_groups, users_per_group)
 
                 for i in range(int(num_groups)):
                     for j in range(users_per_group):
@@ -136,7 +144,7 @@ def train_model_aggregated(global_model, criterion, num_rounds, local_epochs, nu
                 global_model.load_state_dict(global_weights)
 
             else:
-                val_loss_r = model_evaluation(model=global_model.float(), dataloader_list=all_list, indeces=test_ids)
+                val_loss_r = model_evaluation(model=global_model.float(), dataloader_list=all_list, indeces=test_ids, scaler_list=scaler_list)
 
                 val_loss.append(val_loss_r)
                 print('{} Loss: {:.4f}'.format(phase, val_loss_r))
@@ -178,7 +186,7 @@ def train_model_aggregated_small_groups(global_model, criterion, num_rounds, loc
                 total_data = 0
                 total_loss = 0
 
-                list_of_list = get_nonrandom_ids_small_groups(distances_dict, users_ids, num_groups, users_per_group)
+                list_of_list = get_nonrandom_ids_small_groups(distances_dict, training_ids, num_groups, users_per_group)
 
                 for i, l in enumerate(list_of_list):
                     for j, idx in enumerate(l):
@@ -221,8 +229,9 @@ def model_evaluation(model, dataloader_list, indeces, scaler_list):
         local_total = 0
         criterion = nn.MSELoss(reduction="sum")
 
-        for ind in indeces[:50]:
-            scaler = scaler_list[int(ind)]
+        for j, ind in enumerate(indeces[:50]):
+            #print(ind)
+            scaler = scaler_list[j]
             dataloader = dataloader_list[ind]
             for sample in dataloader:
                 seq = sample["seq"].float().to(device)
@@ -231,10 +240,23 @@ def model_evaluation(model, dataloader_list, indeces, scaler_list):
 
                 target_pred = model(seq, fixed)
 
+                #print(target)
                 scaled_target = [scaler.inverse_transform(x.detach().cpu().numpy()) for x in target]
-                scaled_pred = [scaler.inverse_transform(x.detach().cpu().numpy()) for x in target_pred]
+                #print(scaled_target)
+                #print(c)
 
-                loss = criterion(target_pred, target)
+                scaled_pred = [scaler.inverse_transform(x.detach().cpu().numpy()) for x in target_pred]
+                scaled_target = np.dstack(scaled_target)
+                scaled_pred = np.dstack(scaled_pred)
+                #print(target_pred.shape)
+                #print(target.shape)
+                #print(scaled_pred.shape)
+                #print(scaled_target.shape)
+                #print(scaled_pred.size)
+                #print(scaled_target.size)
+
+
+                loss = torch.sqrt(criterion(torch.from_numpy(scaled_target), torch.from_numpy(scaled_pred)))
                 local_loss += loss.item()
                 local_total += target.nelement()
 
