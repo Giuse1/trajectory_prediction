@@ -22,8 +22,8 @@ class UserDataset(Dataset):
 
     def __getitem__(self, idx_sample):
         s = self.trainset[self.start_arr[idx_sample]:self.start_arr[idx_sample] + 100, :]
-        seq = torch.from_numpy(s[:int(0.9 * self.window), 6:])
-        target = torch.from_numpy(s[int(0.9 * self.window):, 9:11])
+        seq = torch.from_numpy(s[:int(0.9 * self.window), 2:])
+        target = torch.from_numpy(s[int(0.9 * self.window):, 2:4])
         fixed = self.info[self.info['index'] == s[0, 1]].values[0, 2:5].astype(float)
         fixed = torch.from_numpy(fixed)
         sample = {'seq': seq, 'target': target, 'fixed': fixed}
