@@ -144,10 +144,10 @@ def train_model_aggregated(global_model, criterion, num_rounds, local_epochs, nu
                 global_model.load_state_dict(global_weights)
 
             else:
-                val_loss_r = model_evaluation(model=global_model.float(), dataloader_list=all_list, indeces=test_ids, scaler_list=scaler_list)
+                x_loss, y_loss = model_evaluation(model=global_model.float(), dataloader_list=all_list, indeces=test_ids, scaler_list=scaler_list)
 
-                val_loss.append(val_loss_r)
-                print('{} Loss: {:.4f}'.format(phase, val_loss_r))
+                #val_loss.append(val_loss_r)
+                print('{} x_loss: {:.4f} y_loss: {:.4f}'.format(phase, x_loss, y_loss))
 
     return train_loss, val_loss
 
@@ -235,7 +235,6 @@ def model_evaluation(model, dataloader_list, indeces, scaler_list):
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         local_loss = 0
         local_total = 0
-        criterion = nn.MSELoss(reduction="sum")
         y_total_error = 0
         x_total_error = 0
         for j, ind in enumerate(indeces):
@@ -257,15 +256,22 @@ def model_evaluation(model, dataloader_list, indeces, scaler_list):
                 scaled_pred = [scaler.inverse_transform(x.detach().cpu().numpy()) for x in target_pred]
                 scaled_target = np.dstack(scaled_target)
                 scaled_pred = np.dstack(scaled_pred)
-                x_error = np.abs(scaled_target[:, 0] - scaled_pred[:, 0])
-                y_error = np.abs(scaled_target[:, 1] - scaled_pred[:, 1])
+                #print(scaled_pred.shape)
+                x_error = np.abs(scaled_target[:, 0, :] - scaled_pred[:, 0])
+                y_error = np.abs(scaled_target[:, 1, :] - scaled_pred[:, 1])
 
                 x_total_error += np.sum(x_error)
                 y_total_error += np.sum(y_error)
-                local_total += len(x_error)
+                local_total += x_error.size
+                #print(x_error.shape)
+                #print(y_error.shape)
+                #print(x_total_error)
+                #print(y_total_error)
+                #print(x_error.size)
+                #print(c)
 
 
-        return local_loss/local_total
+        return x_total_error/local_total, y_total_error/local_total
 
 
 def average_weights(w, samples_per_client):

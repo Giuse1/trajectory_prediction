@@ -27,7 +27,7 @@ print(f"mode: {mode}")
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 criterion = nn.MSELoss()
-model_ft = LSTMnn(num_feat=15, hidden_dim=128 , fixed_dim=3)
+model_ft = LSTMnn(num_feat=15, hidden_dim=256, fixed_dim=3)
 model_ft = model_ft.to(device)
 
 
