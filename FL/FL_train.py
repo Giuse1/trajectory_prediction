@@ -236,7 +236,8 @@ def model_evaluation(model, dataloader_list, indeces, scaler_list):
         local_loss = 0
         local_total = 0
         criterion = nn.MSELoss(reduction="sum")
-
+        y_total_error = 0
+        x_total_error = 0
         for j, ind in enumerate(indeces):
             #print(ind)
             scaler = scaler_list[j]
@@ -256,17 +257,13 @@ def model_evaluation(model, dataloader_list, indeces, scaler_list):
                 scaled_pred = [scaler.inverse_transform(x.detach().cpu().numpy()) for x in target_pred]
                 scaled_target = np.dstack(scaled_target)
                 scaled_pred = np.dstack(scaled_pred)
-                #print(target_pred.shape)
-                #print(target.shape)
-                #print(scaled_pred.shape)
-                #print(scaled_target.shape)
-                #print(scaled_pred.size)
-                #print(scaled_target.size)
+                x_error = np.abs(scaled_target[:, 0] - scaled_pred[:, 0])
+                y_error = np.abs(scaled_target[:, 1] - scaled_pred[:, 1])
 
+                x_total_error += np.sum(x_error)
+                y_total_error += np.sum(y_error)
+                local_total += len(x_error)
 
-                loss = torch.sqrt(criterion(torch.from_numpy(scaled_target), torch.from_numpy(scaled_pred)))
-                local_loss += loss.item()
-                local_total += target.nelement()
 
         return local_loss/local_total
 
