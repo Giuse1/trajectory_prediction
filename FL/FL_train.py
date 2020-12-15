@@ -31,7 +31,7 @@ def train_model(global_model, criterion, num_rounds, local_epochs, num_users, ba
     scaler_list = []
     path = "/content/drive/MyDrive/data_ngsim/"
     for i in test_ids[:10]:
-        tmp = pd.read_csv(path+str(int(i))+"_r50.csv")[["Local_X", "Local_Y"]]
+        tmp = pd.read_csv(path+str(int(i))+"_r50.csv")[["diff_Local_X", "diff_Local_Y"]]
         scaler = MinMaxScaler(feature_range=(-5, 5))
         scaler.fit(tmp)
         scaler_list.append(scaler)
@@ -97,7 +97,7 @@ def train_model_aggregated(global_model, criterion, num_rounds, local_epochs, nu
     scaler_list = []
     path = "/content/drive/MyDrive/data_ngsim/"
     for i in test_ids[:10]:
-        tmp = pd.read_csv(path+str(int(i))+"_r50.csv")[["Local_X", "Local_Y"]]
+        tmp = pd.read_csv(path+str(int(i))+"_r50.csv")[["diff_Local_X", "diff_Local_Y"]]
         scaler = MinMaxScaler(feature_range=(-5,5))
         scaler.fit(tmp)
         scaler_list.append(scaler)
@@ -176,7 +176,7 @@ def train_model_aggregated_small_groups(global_model, criterion, num_rounds, loc
     scaler_list = []
     path = "/content/drive/MyDrive/data_ngsim/"
     for i in test_ids[:10]:
-        tmp = pd.read_csv(path + str(int(i)) + "_r50.csv")[["Local_X", "Local_Y"]]
+        tmp = pd.read_csv(path + str(int(i)) + "_r50.csv")[["diff_Local_X", "diff_Local_Y"]]
         scaler = MinMaxScaler(feature_range=(-5, 5))
         scaler.fit(tmp)
         scaler_list.append(scaler)
@@ -219,6 +219,9 @@ def train_model_aggregated_small_groups(global_model, criterion, num_rounds, loc
                 print('{} Loss: {:.4f}'.format(phase, total_loss/total_data))
                 global_weights = average_weights(local_weights, samples_per_client)
                 global_model.load_state_dict(global_weights)
+                # if round%10 == 0 and round!=0:
+                #     torch.save(global_model.state_dict(), '/content/drive/MyDrive/lstm.pth')
+
 
             else:
                 val_loss_r = model_evaluation(model=global_model.float(), dataloader_list=all_list, indeces=test_ids, scaler_list=scaler_list)

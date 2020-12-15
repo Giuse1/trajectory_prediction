@@ -7,7 +7,7 @@ torch.manual_seed(1)
 
 num_rounds = 100
 local_epochs = 1
-num_users = 100
+num_users = 500
 users_per_group = 10
 batch_size = 32
 learning_rate = 1e-6
