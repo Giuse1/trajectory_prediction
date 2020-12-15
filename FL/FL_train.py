@@ -96,7 +96,7 @@ def train_model_aggregated(global_model, criterion, num_rounds, local_epochs, nu
 
     scaler_list = []
     path = "/content/drive/MyDrive/data_ngsim/"
-    for i in test_ids[:10]
+    for i in test_ids[:10]:
         tmp = pd.read_csv(path+str(int(i))+"_r50.csv")[["Local_X", "Local_Y"]]
         scaler = MinMaxScaler(feature_range=(-5,5))
         scaler.fit(tmp)
