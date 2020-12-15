@@ -11,9 +11,10 @@ class User(object):
         self.dataloader = dataloader
         self.learning_rate = learning_rate
 
-    def update_weights(self, model):
+    def update_weights(self, model, epoch):
         model.train()
-        optimizer = torch.optim.SGD(model.parameters(), lr=self.learning_rate, momentum=0.9)
+        lr = self.learning_rate*0.99**epoch
+        optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=0.01)
         local_loss = 0
         local_total = 0
         criterion = nn.MSELoss(reduction="sum")

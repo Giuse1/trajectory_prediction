@@ -32,7 +32,7 @@ def train_model(global_model, criterion, num_rounds, local_epochs, num_users, ba
     path = "/content/drive/MyDrive/data_ngsim/"
     for i in test_ids:
         tmp = pd.read_csv(path+str(int(i))+"_r50.csv")[["Local_X", "Local_Y"]]
-        scaler = MinMaxScaler(feature_range=(-5,5))
+        scaler = MinMaxScaler(feature_range=(-5, 5))
         scaler.fit(tmp)
         scaler_list.append(scaler)
 
@@ -53,7 +53,7 @@ def train_model(global_model, criterion, num_rounds, local_epochs, num_users, ba
                     local_model = User(dataloader=all_list[idx], id=idx, criterion=criterion,
                                               local_epochs=local_epochs, learning_rate=learning_rate)
                     w, local_loss, total_local_data, local_total = local_model.update_weights(
-                        model=copy.deepcopy(global_model).float())
+                        model=copy.deepcopy(global_model).float(), epoch=round)
                     total_data += total_local_data
                     total_loss += local_loss
                     local_weights.append(copy.deepcopy(w))
@@ -204,13 +204,13 @@ def train_model_aggregated_small_groups(global_model, criterion, num_rounds, loc
 
                         if j == 0:
                             w, local_loss, total_local_data, local_total = local_model.update_weights(
-                                model=copy.deepcopy(global_model).float())
+                                model=copy.deepcopy(global_model).float(), epoch=round)
                             samples_per_client.append(local_total)
                         else:
                             model_tmp = copy.deepcopy(global_model)
                             model_tmp.load_state_dict(w)
                             w, local_loss, total_local_data, local_total = local_model.update_weights(
-                                model=model_tmp.float())
+                                model=model_tmp.float(), epoch=round)
                             samples_per_client[i] += local_total
                     total_data += total_local_data
                     total_loss += local_loss
