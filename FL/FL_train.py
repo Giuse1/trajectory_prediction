@@ -224,10 +224,10 @@ def train_model_aggregated_small_groups(global_model, criterion, num_rounds, loc
 
 
             else:
-                val_loss_r = model_evaluation(model=global_model.float(), dataloader_list=all_list, indeces=test_ids, scaler_list=scaler_list)
+                x_loss, y_loss = model_evaluation(model=global_model.float(), dataloader_list=all_list, indeces=test_ids, scaler_list=scaler_list)
 
-                val_loss.append(val_loss_r)
-                print('{} Loss: {:.4f}'.format(phase, val_loss_r))
+                #val_loss.append(val_loss_r)
+                print('{} x_loss: {:.4f} y_loss: {:.4f}'.format(phase, x_loss, y_loss))
 
     return train_loss, val_loss
 
