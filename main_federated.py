@@ -24,6 +24,7 @@ print(f"num_rounds: {num_rounds}")
 print(f"local_epochs: {local_epochs}")
 print(f"batch_size: {batch_size}")
 print(f"learning_rate: {learning_rate}")
+print(f"decay: {decay}")
 print(f"mode: {mode}")
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -36,25 +37,25 @@ model_ft = model_ft.to(device)
 
 if mode == "standard":
     train_loss, train_acc, val_loss, val_acc = train_model(model_ft, criterion, num_rounds=num_rounds, local_epochs=local_epochs, num_users=num_users,
-                                                       batch_size=batch_size, learning_rate=learning_rate)
+                                                       batch_size=batch_size, learning_rate=learning_rate, decay=decay)
 
 elif mode == "hybrid_random":
     train_loss, train_acc, val_loss, val_acc = train_model_aggregated(model_ft, criterion, num_rounds=num_rounds,
                                                            local_epochs=local_epochs,
                                                            num_users=num_users,
                                                            users_per_group=users_per_group, batch_size=batch_size,
-                                                           learning_rate=learning_rate, mode=mode)
+                                                           learning_rate=learning_rate, mode=mode, decay=decay)
 
 elif mode == "hybrid_non_random":
     train_loss, train_acc, val_loss, val_acc = train_model_aggregated(model_ft, criterion, num_rounds=num_rounds,
                                                            local_epochs=local_epochs,
                                                            num_users=num_users,
                                                            users_per_group=users_per_group, batch_size=batch_size,
-                                                           learning_rate=learning_rate, mode=mode)
+                                                           learning_rate=learning_rate, mode=mode, decay=decay)
 
 elif mode == "hybrid_non_random_small_groups":
     train_loss, train_acc, val_loss, val_acc = train_model_aggregated_small_groups(model_ft, criterion, num_rounds=num_rounds,
                                                            local_epochs=local_epochs,
                                                            num_users=num_users,
                                                            users_per_group=users_per_group, batch_size=batch_size,
-                                                           learning_rate=learning_rate)
+                                                           learning_rate=learning_rate, decay=decay)
