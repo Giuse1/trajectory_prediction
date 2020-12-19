@@ -11,9 +11,9 @@ class User(object):
         self.dataloader = dataloader
         self.learning_rate = learning_rate
 
-    def update_weights(self, model, epoch):
+    def update_weights(self, model, epoch, decay):
         model.train()
-        lr = self.learning_rate*0.99**epoch
+        lr = self.learning_rate*decay**epoch
         optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=0.1)
         local_loss = 0
         local_total = 0

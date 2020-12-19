@@ -10,7 +10,8 @@ local_epochs = 1
 num_users = 500
 users_per_group = 10
 batch_size = 32
-learning_rate = 1e-4
+learning_rate = 1e-3
+decay = 0.95
 #path = "/content/drive/MyDrive/data_ngsim/"
 #list_files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
 #total_num_users = len(list_files)
@@ -28,7 +29,7 @@ print(f"mode: {mode}")
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 criterion = nn.MSELoss()
 # model_ft = LSTMnn(num_feat=15, hidden_dim=256, fixed_dim=3)
-model_ft = LSTMnn(num_feat=11, hidden_dim=256, fixed_dim=3)
+model_ft = LSTMnn(num_feat=13, hidden_dim=256, fixed_dim=3)
 
 model_ft = model_ft.to(device)
 

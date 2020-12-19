@@ -23,7 +23,7 @@ class UserDataset(Dataset):
     def __getitem__(self, idx_sample):
         s = self.trainset[self.start_arr[idx_sample]:self.start_arr[idx_sample] + 100, :]
         # seq = torch.from_numpy(s[:int(0.9 * self.window), 2:])
-        seq = torch.from_numpy(s[:int(0.9 * self.window), 6:])
+        seq = torch.from_numpy(s[:int(0.9 * self.window), 4:])
         # target = torch.from_numpy(s[int(0.9 * self.window):, 2:4])
         target = torch.from_numpy(s[int(0.9 * self.window):, 13:15])
 
