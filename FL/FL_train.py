@@ -90,7 +90,7 @@ def train_model_aggregated(global_model, criterion, num_rounds, local_epochs, nu
     print("training set lenght:" + str(len(training_ids)))
     print("test set lenght:" + str(len(test_ids)))
 
-    with open('/content/drive/MyDrive/general_data/distances.json', 'r') as fp:
+    with open('/content/drive/MyDrive/general_data/distances_300.json', 'r') as fp:
         distances_dict = json.load(fp)
 
     scaler_list = []
@@ -169,7 +169,7 @@ def train_model_aggregated_small_groups(global_model, criterion, num_rounds, loc
     print("training set lenght:" + str(len(training_ids)))
     print("test set lenght:" + str(len(test_ids)))
 
-    with open('/content/drive/MyDrive/general_data/distances.json', 'r') as fp:
+    with open('/content/drive/MyDrive/general_data/distances_300.json', 'r') as fp:
         distances_dict = json.load(fp)
 
     scaler_list = []
